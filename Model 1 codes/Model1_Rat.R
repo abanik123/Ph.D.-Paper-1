@@ -3,7 +3,7 @@ library(MCMCvis)
 library(tidyverse)
 library(dplyr)
 
-# Function to get the index of the first non-zero value in a row
+# Function to get the index of the first non-zero value
 get_first_non_zero_index <- function(row) {
   non_zero_indices <- which(row != 0)
   if (length(non_zero_indices) > 0) {
