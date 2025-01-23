@@ -4,9 +4,9 @@ library(MCMCvis)
 
 #' Read in the data. 
 ## ---------------------------------------------------------------------------------------------------------
-data <- read.csv("Firth_Breeding_Sex_Data.csv")
+data <- read.csv("Big_Breeding_Sex_Data.csv")
 y <- data %>%
-  select(Fall_2014:Fall_2020) %>%
+  select(Fall_2009:Fall_2020) %>%
   #select(year_2014:year_2020) %>%
   as.matrix()
 
@@ -19,45 +19,22 @@ first <- apply(y, 1, get.first)
 
 code_m <- nimbleCode({
   
-  # -------------------------------------------------
-  # Parameters:
-  # phiB: survival probability while B
-  # phiNB: survival probability while NB
-  # psiB_NB: movement probability from B to NB
-  # psiNB_B: movement probability from NB to B
-  # pB: recapture probability while B
-  # pNB: recapture probability while NB
-  # -------------------------------------------------
-  # States (z):
-  # 1 alive while B
-  # 2 alive while NB
-  # 3 dead
-  # Observations (y):  
-  # 1 not seen
-  # 2 seen while B 
-  # 3 seen while NB
-  # -------------------------------------------------
-  
-  # priors
-  #phiB ~ dunif(0, 1)
-  #phiNB ~ dunif(0, 1)
-  #psiB_NB ~ dunif(0, 1)
-  #psiNB_B ~ dunif(0, 1)
+  # -------------------------------------------------#
   
   #delta_m ~ dbeta(1,1)
   
   pB ~ dbeta(1, 1)
   pNB ~ dbeta(1, 1)
   
-  beta[1] ~ dnorm(0,1/100)
-  beta[2] ~ dnorm(0,1/100)
-  beta[3] ~ dnorm(0,1/100)
-  beta[4] ~ dnorm(0,1/100)
+ beta[1] ~ dnorm(0,1/1000)
+  beta[2] ~ dnorm(0,1/1000)
+  beta[3] ~ dnorm(0,1/1000)
+  beta[4] ~ dnorm(0,1/1000)
   
-  alpha[1] ~ dnorm(0,1/100)
-  alpha[2] ~ dnorm(0,1/100)
-  alpha[3] ~ dnorm(0,1/100)
-  alpha[4] ~ dnorm(0,1/100)
+  alpha[1] ~ dnorm(0,1/1000)
+  alpha[2] ~ dnorm(0,1/1000)
+  alpha[3] ~ dnorm(0,1/1000)
+  alpha[4] ~ dnorm(0,1/1000)
   
   # likelihood 
   for (i in 1:N){
@@ -124,10 +101,11 @@ my.constants <- list(first = first,
 #' Initial values without $p_B$. 
 ## ---------------------------------------------------------------------------------------------------------
 
-s_inits <- sex.st #ifelse(!is.na(firth_sex)==NA, 1)
+s_inits <- sex.st #ifelse(!is.na(Big_sex)==NA, 1)
 
 s_inits[is.na(sex.st)] <- sample(c(0,1),sum(is.na(sex.st)), replace = TRUE)
 s_inits[!is.na(sex.st)] <- NA 
+s_inits
 
 zinits <- y
 zinits[zinits==0] <- sample(c(1,2), sum(zinits==0), replace = TRUE)
@@ -146,8 +124,8 @@ parameters.to.save
 
 #' MCMC settings.
 ## ---------------------------------------------------------------------------------------------------------
-n.iter <- 500000
-n.burnin <- 50000
+n.iter <- 300000
+n.burnin <- 40000
 n.chains <- 3
 
 
@@ -168,12 +146,12 @@ waic
 #Model Summary
 samples<- mcmc.multistate$samples
 
-pdf(file = "Firth_mp_m3.pdf")
+pdf(file = "Big_mp_m3.pdf")
 MCMCplot(samples, HPD = T)
 dev.off()
 
 s <- MCMCsummary(samples, round = 5)
-MCMCtrace(samples,pdf = T,open_pdf = F,filename = "Firth_m3", ind = TRUE,
+MCMCtrace(samples,pdf = T,open_pdf = F,filename = "Big_m3", ind = TRUE,
           Rhat = FALSE, n.eff = FALSE)
-write.csv(s, file = "Firth_m3_sum.csv")
+write.csv(s, file = "Big_m3_sum.csv")
 

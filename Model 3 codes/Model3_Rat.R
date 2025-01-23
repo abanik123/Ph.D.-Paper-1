@@ -44,26 +44,26 @@ code_m <- nimbleCode({
   #psiB_NB ~ dunif(0, 1)
   #psiNB_B ~ dunif(0, 1)
   
-  delta_m ~ dbeta(1,1)
+  #delta_m ~ dbeta(1,1)
   
   pB ~ dbeta(1, 1)
   pNB ~ dbeta(1, 1)
   
-  beta[1] ~ dnorm(0,1)
-  beta[2] ~ dnorm(0,1)
-  beta[3] ~ dnorm(0,1)
-  beta[4] ~ dnorm(0,1)
+  beta[1] ~ dnorm(0,1/100)
+  beta[2] ~ dnorm(0,1/100)
+  beta[3] ~ dnorm(0,1/100)
+  beta[4] ~ dnorm(0,1/100)
   
-  alpha[1] ~ dnorm(0,1)
-  alpha[2] ~ dnorm(0,1)
-  alpha[3] ~ dnorm(0,1)
-  alpha[4] ~ dnorm(0,1)
-  
+  alpha[1] ~ dnorm(0,1/1000)
+  alpha[2] ~ dnorm(0,1/1000)
+  alpha[3] ~ dnorm(0,1/1000)
+  alpha[4] ~ dnorm(0,1/1000)
+
   
   # likelihood 
   for (i in 1:N){
     
-    sex[i] ~ dbern(delta_m)
+    sex[i] ~ dbern(0.3)
     
     # latent state at first capture
     z[i,first[i]] <- y[i,first[i]] - 1 # if seen while B (y = 2), state is alive while B(y - 1 = z = 1) with prob = 1
@@ -129,14 +129,13 @@ s_inits <- sex.st #ifelse(!is.na(Rat_sex)==NA, 1)
 
 s_inits[is.na(sex.st)] <- sample(c(0,1),sum(is.na(sex.st)), replace = TRUE)
 s_inits[!is.na(sex.st)] <- NA 
-s_inits
 
 zinits <- y
 zinits[zinits==0] <- sample(c(1,2), sum(zinits==0), replace = TRUE)
 initial.values <- list(pB = runif(1, 0, 1), 
                        pNB = runif(1, 0, 1),
                        alpha = runif(4,0,1),
-                       beta = runif(4,0,1), delta_m=0.2,
+                       beta = runif(4,0,1),
                        z = zinits,
                        sex = s_inits)
 
@@ -148,8 +147,8 @@ parameters.to.save
 
 #' MCMC settings.
 ## ---------------------------------------------------------------------------------------------------------
-n.iter <- 175000
-n.burnin <- 35000
+n.iter <- 600000
+n.burnin <- 50000
 n.chains <- 3
 
 

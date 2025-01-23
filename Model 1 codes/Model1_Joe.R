@@ -13,7 +13,7 @@ get_first_non_zero_index <- function(row) {
   }
 }
 
-capture_mat <- read.csv("Babbage_Capture_Data.csv")
+capture_mat <- read.csv("Joe_Capture_Data.csv")
 
 code_m <- nimbleCode({
   # Priors
@@ -59,7 +59,7 @@ f_1 <- apply(capture_mat, 1, get_first_non_zero_index)
 N = nrow(capture_mat)
 nyears = ncol(capture_mat)
 
-# GeneBabbagee inits for the latent states
+# GeneJoee inits for the latent states
 x.init <- matrix(1, N, nyears)  # Set to 1 or another appropriate value for initial state
 for (i in 1:N) {
   if (f_1[i] > 1) x.init[i, 1:(f_1[i]-1)] <- NA
@@ -76,8 +76,8 @@ initial.values <- list(phi = runif(1, 0, 1),
 parameters.to.save <- c("phi", "p")
 #' MCMC settings.
 ## ---------------------------------------------------------------------------------------------------------
-n.iter <- 175000
-n.burnin <- 35000
+n.iter <- 200000
+n.burnin <- 40000
 n.chains <- 3
 
 
@@ -98,11 +98,11 @@ waic
 #Model Summary
 samples<- mcmc.multistate$samples
 
-pdf(file = "Babbage_mp_m1.pdf")
+pdf(file = "Joe_mp_m1.pdf")
 MCMCplot(samples, HPD = T)
 dev.off()
 
 s <- MCMCsummary(samples, round = 5)
-MCMCtrace(samples,pdf = T,open_pdf = F,filename = "Babbage_m1", ind = TRUE,
+MCMCtrace(samples,pdf = T,open_pdf = F,filename = "Joe_m1", ind = TRUE,
           Rhat = FALSE, n.eff = FALSE)
-write.csv(s, file = "Babbage_m1_sum.csv")
+write.csv(s, file = "Joe_m1_sum.csv")

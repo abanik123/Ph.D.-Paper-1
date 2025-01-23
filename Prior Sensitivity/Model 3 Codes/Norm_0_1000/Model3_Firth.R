@@ -49,15 +49,15 @@ code_m <- nimbleCode({
   pB ~ dbeta(1, 1)
   pNB ~ dbeta(1, 1)
   
-  beta[1] ~ dnorm(0,1/100)
-  beta[2] ~ dnorm(0,1/100)
-  beta[3] ~ dnorm(0,1/100)
-  beta[4] ~ dnorm(0,1/100)
+  beta[1] ~ dnorm(0,1/1000)
+  beta[2] ~ dnorm(0,1/1000)
+  beta[3] ~ dnorm(0,1/1000)
+  beta[4] ~ dnorm(0,1/1000)
   
-  alpha[1] ~ dnorm(0,1/100)
-  alpha[2] ~ dnorm(0,1/100)
-  alpha[3] ~ dnorm(0,1/100)
-  alpha[4] ~ dnorm(0,1/100)
+  alpha[1] ~ dnorm(0,1/1000)
+  alpha[2] ~ dnorm(0,1/1000)
+  alpha[3] ~ dnorm(0,1/1000)
+  alpha[4] ~ dnorm(0,1/1000)
   
   # likelihood 
   for (i in 1:N){

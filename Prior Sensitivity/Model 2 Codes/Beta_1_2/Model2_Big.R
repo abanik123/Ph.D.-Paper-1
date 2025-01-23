@@ -1,14 +1,17 @@
-library(nimble)
 library(tidyverse)
+library(nimble)
 library(MCMCvis)
 
 #' Read in the data. 
 ## ---------------------------------------------------------------------------------------------------------
-data <- read.csv("Firth_Breeding_Sex_Data.csv")
+data <- read.csv("Big_Breeding_Data.csv")
 y <- data %>%
-  select(Fall_2014:Fall_2020) %>%
+  select(Fall_2009:Fall_2020) %>%
   #select(year_2014:year_2020) %>%
   as.matrix()
+
+#y <- as.matrix(data)
+#head(y)
 
 #' 
 #' Get occasion of first capture.
@@ -17,6 +20,9 @@ get.first <- function(x) min(which(x != 0))
 first <- apply(y, 1, get.first)
 #first
 
+
+#' Actually, the initial state of the dolly varden is known exactly. It is alive at site of initial capture. Therefore, we don't need to try and estimate the probability of initial states. 
+## ---------------------------------------------------------------------------------------------------------
 code_m <- nimbleCode({
   
   # -------------------------------------------------
@@ -39,58 +45,23 @@ code_m <- nimbleCode({
   # -------------------------------------------------
   
   # priors
-  #phiB ~ dunif(0, 1)
-  #phiNB ~ dunif(0, 1)
-  #psiB_NB ~ dunif(0, 1)
-  #psiNB_B ~ dunif(0, 1)
-  
-  #delta_m ~ dbeta(1,1)
-  
-  pB ~ dbeta(1, 1)
-  pNB ~ dbeta(1, 1)
-  
-  beta[1] ~ dnorm(0,1/100)
-  beta[2] ~ dnorm(0,1/100)
-  beta[3] ~ dnorm(0,1/100)
-  beta[4] ~ dnorm(0,1/100)
-  
-  alpha[1] ~ dnorm(0,1/100)
-  alpha[2] ~ dnorm(0,1/100)
-  alpha[3] ~ dnorm(0,1/100)
-  alpha[4] ~ dnorm(0,1/100)
-  
-  # likelihood 
-  for (i in 1:N){
-    
-    sex[i] ~ dbern(0.3)
-    
-    # latent state at first capture
-    z[i,first[i]] <- y[i,first[i]] - 1 # if seen while B (y = 2), state is alive while B(y - 1 = z = 1) with prob = 1
-    for (t in (first[i]+1):K){         # if seen while NB (y = 3), state is alive while B (y - 1 = z = 2) with prob = 1
-      # draw (t) given z(t-1)
-      z[i,t] ~ dcat(gamma[z[i,t-1],1:3,i])
-      # draw y(t) given z(t)
-      y[i,t] ~ dcat(omega[z[i,t],1:3])
-    }
-  }
+  phiB ~ dbeta(1, 2)
+  phiNB ~ dbeta(1, 2)
+  psiB_NB ~ dbeta(1, 2)
+  psiNB_B ~ dbeta(1, 2)
+  pB ~ dbeta(1, 2)
+  pNB ~ dbeta(1, 2)
+
   # probabilities of state z(t+1) given z(t)
-  for (i in 1:N) {
-    
-    logit(phiB[i])<- (alpha[1]*sex[i])+(beta[1]*(1-sex[i]))
-    logit(psiB_NB[i]) <- (alpha[2]*sex[i])+(beta[2]*(1-sex[i]))
-    logit(phiNB[i])<- (alpha[3]*sex[i])+(beta[3]*(1-sex[i]))
-    logit(psiNB_B[i])<- (alpha[4]*sex[i])+(beta[4]*(1-sex[i]))
-    
-    gamma[1,1,i] <- phiB[i] * (1 - psiB_NB[i])
-    gamma[1,2,i] <- phiB[i] * psiB_NB[i]
-    gamma[1,3,i] <- 1 - phiB[i]
-    gamma[2,1,i] <- phiNB[i] * psiNB_B[i]
-    gamma[2,2,i] <- phiNB[i] * (1 - psiNB_B[i])
-    gamma[2,3,i] <- 1 - phiNB[i]
-    gamma[3,1,i] <- 0
-    gamma[3,2,i] <- 0
-    gamma[3,3,i] <- 1
-  }
+  gamma[1,1] <- phiB * (1 - psiB_NB)
+  gamma[1,2] <- phiB * psiB_NB
+  gamma[1,3] <- 1 - phiB
+  gamma[2,1] <- phiNB * psiNB_B
+  gamma[2,2] <- phiNB * (1 - psiNB_B)
+  gamma[2,3] <- 1 - phiNB
+  gamma[3,1] <- 0
+  gamma[3,2] <- 0
+  gamma[3,3] <- 1
   
   # probabilities of y(t) given z(t)
   omega[1,1] <- 1 - pB     # Pr(alive B t -> not-captured t)
@@ -102,15 +73,24 @@ code_m <- nimbleCode({
   omega[3,1] <- 1          # Pr(dead t -> not-captured t)
   omega[3,2] <- 0          # Pr(dead t -> captured B t)
   omega[3,3] <- 0          # Pr(dead t -> captured NB t)
+  
+  # likelihood 
+  for (i in 1:N){
+    # latent state at first capture
+    z[i,first[i]] <- y[i,first[i]] - 1 # if seen while B (y = 2), state is alive while B(y - 1 = z = 1) with prob = 1
+    for (t in (first[i]+1):K){         # if seen while NB (y = 3), state is alive while B (y - 1 = z = 2) with prob = 1
+      # draw z(t) given z(t-1)
+      z[i,t] ~ dcat(gamma[z[i,t-1],1:3])
+      # draw y(t) given z(t)
+      y[i,t] ~ dcat(omega[z[i,t],1:3])
+    }
+  }
 })
 
 #' 
 #' Data in a list. Remember to add 1. 
 ## ---------------------------------------------------------------------------------------------------------
-
-sex.st<-as.vector(data$Sex)
-
-my.data <- list(y = y + 1, sex = sex.st)
+my.data <- list(y = y + 1)
 
 
 #' Constants in a list. 
@@ -123,31 +103,26 @@ my.constants <- list(first = first,
 #' 
 #' Initial values without $p_B$. 
 ## ---------------------------------------------------------------------------------------------------------
-
-s_inits <- sex.st #ifelse(!is.na(firth_sex)==NA, 1)
-
-s_inits[is.na(sex.st)] <- sample(c(0,1),sum(is.na(sex.st)), replace = TRUE)
-s_inits[!is.na(sex.st)] <- NA 
-
 zinits <- y
 zinits[zinits==0] <- sample(c(1,2), sum(zinits==0), replace = TRUE)
-initial.values <- list(pB = runif(1, 0, 1), 
-                       pNB = runif(1, 0, 1),
-                       alpha = runif(4,0,1),
-                       beta = runif(4,0,1),
-                       z = zinits,
-                       sex = s_inits)
+initial.values <- function(){list(phiB = runif(1, 0, 1), 
+                                  phiNB = runif(1, 0, 1), 
+                                  psiB_NB = runif(1, 0, 1), 
+                                  psiNB_B = runif(1, 0, 1), 
+                                  pB = runif(1, 0, 1), 
+                                  pNB = runif(1, 0, 1), 
+                                  z = zinits)}
 
 #' 
 #' Parameters to monitor. 
 ## ---------------------------------------------------------------------------------------------------------
-parameters.to.save <- c("pB", "pNB","alpha","beta")
+parameters.to.save <- c("phiB", "phiNB","psiB_NB", "psiNB_B", "pB", "pNB")
 parameters.to.save
 
 #' MCMC settings.
 ## ---------------------------------------------------------------------------------------------------------
-n.iter <- 500000
-n.burnin <- 50000
+n.iter <- 100000
+n.burnin <- 20000
 n.chains <- 3
 
 
@@ -168,12 +143,11 @@ waic
 #Model Summary
 samples<- mcmc.multistate$samples
 
-pdf(file = "Firth_mp_m3.pdf")
+pdf(file = "Big_mp_m2.pdf")
 MCMCplot(samples, HPD = T)
 dev.off()
 
 s <- MCMCsummary(samples, round = 5)
-MCMCtrace(samples,pdf = T,open_pdf = F,filename = "Firth_m3", ind = TRUE,
+MCMCtrace(samples,pdf = T,open_pdf = F,filename = "Big_m2", ind = TRUE,
           Rhat = FALSE, n.eff = FALSE)
-write.csv(s, file = "Firth_m3_sum.csv")
-
+write.csv(s, file = "Big_m2_sum.csv")
